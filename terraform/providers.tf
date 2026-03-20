@@ -18,7 +18,8 @@ terraform {
 }
 
 provider "aws" {
-  region = "ap-south-1"
+  region  = "ap-south-1"
+  profile = "personal"
 }
 
 data "aws_eks_cluster_auth" "eks" {
