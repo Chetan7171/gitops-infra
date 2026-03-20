@@ -1,6 +1,16 @@
-###############################
+###############################################
+# OIDC Provider for IRSA
+###############################################
+
+resource "aws_iam_openid_connect_provider" "eks_oidc" {
+  client_id_list  = ["sts.amazonaws.com"]
+  thumbprint_list = ["9e99a48a9960b14926bb7f3b02e22da0afd08055"]
+  url             = var.oidc_issuer
+}
+
+###############################################
 # IAM Role for ALB Controller
-###############################
+###############################################
 
 data "aws_iam_policy_document" "alb_assume_role_policy" {
   statement {
@@ -8,37 +18,15 @@ data "aws_iam_policy_document" "alb_assume_role_policy" {
 
     principals {
       type        = "Federated"
-      identifiers = [aws_iam_openid_connect_provider.oidc.arn]
+      identifiers = [aws_iam_openid_connect_provider.eks_oidc.arn]
     }
 
     actions = ["sts:AssumeRoleWithWebIdentity"]
 
     condition {
       test     = "StringEquals"
-      variable = "${replace(aws_iam_openid_connect_provider.oidc.url, "https://", "")}:sub"
-      values   = ["system:serviceaccount:kube-system:aws-load-balancer-controller"]
-    }
-  }
-}
-
-resource "aws_iam_role" "alb_role" {
-  name               = "eks-alb-controller-role"
-  assume_role_policy = data.aws_iam_policy_document.alb_assume_role_policy.json
-}
-
-resource "aws_iam_policy" "alb_policy" {
-  name   = "AWSLoadBalancerControllerIAMPolicy"
-  policy = file("${path.module}/alb_iam_policy.json")
-}
-
-resource "aws_iam_role_policy_attachment" "alb_attach" {
-  policy_arn = aws_iam_policy.alb_policy.arn
-  role       = aws_iam_role.alb_role.name
-}
-
-###############################
-# Kubernetes ServiceAccount
-###############################
+      variable = "${replace(aws_iam_openid_connect_provider.eks_oidc.url, " Kubernetes ServiceAccount      variable = "${replace(aws_iam_openid_connect_provider.eks_oidc.url, "https://", "")}:sub"
+###############################################
 
 resource "kubernetes_service_account" "alb_service_account" {
   metadata {
@@ -51,9 +39,9 @@ resource "kubernetes_service_account" "alb_service_account" {
   }
 }
 
-###############################
+###############################################
 # Helm Install AWS Load Balancer Controller
-###############################
+###############################################
 
 resource "helm_release" "aws_load_balancer_controller" {
   name       = "aws-load-balancer-controller"
@@ -86,3 +74,24 @@ resource "helm_release" "aws_load_balancer_controller" {
     value = var.vpc_id
   }
 }
+      values   = ["system:serviceaccount:kube-system:aws-load-balancer-controller"]
+    }
+  }
+}
+
+resource "aws_iam_role" "alb_role" {
+  name               = "eks-alb-controller-role"
+  assume_role_policy = data.aws_iam_policy_document.alb_assume_role_policy.json
+}
+
+resource "aws_iam_policy" "alb_policy" {
+  name   = "AWSLoadBalancerControllerIAMPolicy"
+  policy = file("${path.module}/alb_iam_policy.json")
+}
+
+resource "aws_iam_role_policy_attachment" "alb_attach" {
+  policy_arn = aws_iam_policy.alb_policy.arn
+  role       = aws_iam_role.alb_role.name
+}
+
+###############################################
