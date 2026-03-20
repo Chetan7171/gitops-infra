@@ -1,3 +1,15 @@
+# Required data sources so this module can output cluster info
+
+data "aws_eks_cluster" "eks" {
+  name = aws_eks_cluster.eks.name
+}
+
+data "aws_eks_cluster_auth" "eks" {
+  name = aws_eks_cluster.eks.name
+}
+
+# Outputs for kubernetes/helm providers and IAM module
+
 output "cluster_name" {
   value = aws_eks_cluster.eks.name
 }
