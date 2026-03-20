@@ -108,8 +108,9 @@ data "aws_eks_cluster_auth" "eks" {
   name = aws_eks_cluster.eks.name
 }
 
-resource "aws_iam_openid_connect_provider" "oidc" {
+
+resource "aws_iam_openid_connect_provider" "eks_oidc" {
   client_id_list  = ["sts.amazonaws.com"]
   thumbprint_list = ["9e99a48a9960b14926bb7f3b02e22da0afd08055"]
-  url             = data.aws_eks_cluster.eks.identity[0].oidc[0].issuer
+  url             = module.eks.oidc_issuer
 }
