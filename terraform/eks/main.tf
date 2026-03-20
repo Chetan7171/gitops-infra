@@ -95,22 +95,3 @@ resource "aws_eks_node_group" "node_group" {
     aws_iam_role_policy_attachment.node_AmazonEKS_CNI_Policy
   ]
 }
-
-###############################
-# OIDC Provider (for IRSA)
-###############################
-
-data "aws_eks_cluster" "eks" {
-  name = aws_eks_cluster.eks.name
-}
-
-data "aws_eks_cluster_auth" "eks" {
-  name = aws_eks_cluster.eks.name
-}
-
-
-resource "aws_iam_openid_connect_provider" "eks_oidc" {
-  client_id_list  = ["sts.amazonaws.com"]
-  thumbprint_list = ["9e99a48a9960b14926bb7f3b02e22da0afd08055"]
-  url             = module.eks.oidc_issuer
-}
