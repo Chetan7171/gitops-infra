@@ -9,7 +9,7 @@ resource "aws_iam_openid_connect_provider" "eks_oidc" {
 }
 
 ###############################################
-# IAM Role for AWS Load Balancer Controller
+# IAM Role for ALB Controller
 ###############################################
 
 data "aws_iam_policy_document" "alb_assume_role_policy" {
@@ -21,9 +21,7 @@ data "aws_iam_policy_document" "alb_assume_role_policy" {
       identifiers = [aws_iam_openid_connect_provider.eks_oidc.arn]
     }
 
-    actions = [
-      "sts:AssumeRoleWithWebIdentity"
-    ]
+    actions = ["sts:AssumeRoleWithWebIdentity"]
 
     condition {
       test     = "StringEquals"
@@ -49,7 +47,7 @@ resource "aws_iam_role_policy_attachment" "alb_attach" {
 }
 
 ###############################################
-# Kubernetes ServiceAccount for ALB Controller
+# Kubernetes ServiceAccount
 ###############################################
 
 resource "kubernetes_service_account" "alb_service_account" {
@@ -64,7 +62,7 @@ resource "kubernetes_service_account" "alb_service_account" {
 }
 
 ###############################################
-# Install AWS Load Balancer Controller (Helm)
+# Install ALB Controller via Helm
 ###############################################
 
 resource "helm_release" "aws_load_balancer_controller" {
@@ -85,7 +83,7 @@ resource "helm_release" "aws_load_balancer_controller" {
 
   set {
     name  = "serviceAccount.name"
-    value = "aws-load-balancer-controller"
+    value = kubernetes_service_account.alb_service_account.metadata[0].name
   }
 
   set {
