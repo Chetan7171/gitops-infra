@@ -1,10 +1,9 @@
-# Required data sources so this module can output cluster info
-
-data "aws_eks_cluster_auth" "eks" {
+# Required cluster data for OIDC issuer output
+data "aws_eks_cluster" "eks" {
   name = aws_eks_cluster.eks.name
 }
 
-# Outputs for kubernetes/helm providers and IAM module
+# Outputs to be consumed by root providers & IAM module
 
 output "cluster_name" {
   value = aws_eks_cluster.eks.name
