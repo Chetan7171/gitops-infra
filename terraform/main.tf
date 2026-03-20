@@ -21,7 +21,9 @@ module "storage" {
 }
 
 module "iam" {
-  source = "./iam"
+  source       = "./iam"
+  cluster_name = module.eks.cluster_name
+  vpc_id       = module.vpc.vpc_id
 }
 
 module "ecr" {
