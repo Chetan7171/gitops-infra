@@ -1,5 +1,5 @@
 ###############################
-# EKS Cluster
+# EKS Cluster IAM Role
 ###############################
 
 resource "aws_iam_role" "eks_cluster_role" {
@@ -27,6 +27,10 @@ resource "aws_iam_role_policy_attachment" "eks_AmazonEKSServicePolicy" {
   role       = aws_iam_role.eks_cluster_role.name
 }
 
+###############################
+# EKS Cluster
+###############################
+
 resource "aws_eks_cluster" "eks" {
   name     = "devops-eks-cluster"
   role_arn = aws_iam_role.eks_cluster_role.arn
@@ -42,7 +46,7 @@ resource "aws_eks_cluster" "eks" {
 }
 
 ###############################
-# EKS Node Group
+# EKS Node Group IAM Role
 ###############################
 
 resource "aws_iam_role" "eks_node_role" {
@@ -75,6 +79,10 @@ resource "aws_iam_role_policy_attachment" "node_AmazonEKS_CNI_Policy" {
   role       = aws_iam_role.eks_node_role.name
 }
 
+###############################
+# Node Group
+###############################
+
 resource "aws_eks_node_group" "node_group" {
   cluster_name    = aws_eks_cluster.eks.name
   node_group_name = "devops-node-group"
@@ -94,4 +102,16 @@ resource "aws_eks_node_group" "node_group" {
     aws_iam_role_policy_attachment.node_AmazonEC2ContainerRegistryReadOnly,
     aws_iam_role_policy_attachment.node_AmazonEKS_CNI_Policy
   ]
+}
+
+###############################
+# Data Sources for Outputs
+###############################
+
+data "aws_eks_cluster" "eks" {
+  name = aws_eks_cluster.eks.name
+}
+
+data "aws_eks_cluster_auth" "eks" {
+  name = aws_eks_cluster.eks.name
 }
