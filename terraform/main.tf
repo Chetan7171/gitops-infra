@@ -1,0 +1,29 @@
+module "vpc" {
+  source = "./vpc"
+}
+
+module "eks" {
+  source = "./eks"
+  vpc_id             = module.vpc.vpc_id
+  private_subnet_ids = module.vpc.private_subnets
+}
+
+module "argocd" {
+  source = "./argocd"
+}
+
+module "monitoring" {
+  source = "./monitoring"
+}
+
+module "storage" {
+  source = "./storage"
+}
+
+module "iam" {
+  source = "./iam"
+}
+
+module "ecr" {
+  source = "./ecr"
+}
