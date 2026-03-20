@@ -9,7 +9,7 @@ resource "aws_iam_openid_connect_provider" "eks_oidc" {
 }
 
 ###############################################
-# IAM Role for ALB Controller
+# IAM Role for AWS Load Balancer Controller
 ###############################################
 
 data "aws_iam_policy_document" "alb_assume_role_policy" {
@@ -21,59 +21,13 @@ data "aws_iam_policy_document" "alb_assume_role_policy" {
       identifiers = [aws_iam_openid_connect_provider.eks_oidc.arn]
     }
 
-    actions = ["sts:AssumeRoleWithWebIdentity"]
+    actions = [
+      "sts:AssumeRoleWithWebIdentity"
+    ]
 
     condition {
       test     = "StringEquals"
-      variable = "${replace(aws_iam_openid_connect_provider.eks_oidc.url, " Kubernetes ServiceAccount      variable = "${replace(aws_iam_openid_connect_provider.eks_oidc.url, "https://", "")}:sub"
-###############################################
-
-resource "kubernetes_service_account" "alb_service_account" {
-  metadata {
-    name      = "aws-load-balancer-controller"
-    namespace = "kube-system"
-
-    annotations = {
-      "eks.amazonaws.com/role-arn" = aws_iam_role.alb_role.arn
-    }
-  }
-}
-
-###############################################
-# Helm Install AWS Load Balancer Controller
-###############################################
-
-resource "helm_release" "aws_load_balancer_controller" {
-  name       = "aws-load-balancer-controller"
-  namespace  = "kube-system"
-  repository = "https://aws.github.io/eks-charts"
-  chart      = "aws-load-balancer-controller"
-
-  set {
-    name  = "clusterName"
-    value = var.cluster_name
-  }
-
-  set {
-    name  = "serviceAccount.create"
-    value = "false"
-  }
-
-  set {
-    name  = "serviceAccount.name"
-    value = kubernetes_service_account.alb_service_account.metadata[0].name
-  }
-
-  set {
-    name  = "region"
-    value = "ap-south-1"
-  }
-
-  set {
-    name  = "vpcId"
-    value = var.vpc_id
-  }
-}
+      variable = "${replace(aws_iam_openid_connect_provider.eks_oidc.url, "https://", "")}:sub"
       values   = ["system:serviceaccount:kube-system:aws-load-balancer-controller"]
     }
   }
@@ -95,3 +49,52 @@ resource "aws_iam_role_policy_attachment" "alb_attach" {
 }
 
 ###############################################
+# Kubernetes ServiceAccount for ALB Controller
+###############################################
+
+resource "kubernetes_service_account" "alb_service_account" {
+  metadata {
+    name      = "aws-load-balancer-controller"
+    namespace = "kube-system"
+
+    annotations = {
+      "eks.amazonaws.com/role-arn" = aws_iam_role.alb_role.arn
+    }
+  }
+}
+
+###############################################
+# Install AWS Load Balancer Controller (Helm)
+###############################################
+
+resource "helm_release" "aws_load_balancer_controller" {
+  name       = "aws-load-balancer-controller"
+  namespace  = "kube-system"
+  repository = "https://aws.github.io/eks-charts"
+  chart      = "aws-load-balancer-controller"
+
+  set {
+    name  = "clusterName"
+    value = var.cluster_name
+  }
+
+  set {
+    name  = "serviceAccount.create"
+    value = "false"
+  }
+
+  set {
+    name  = "serviceAccount.name"
+    value = "aws-load-balancer-controller"
+  }
+
+  set {
+    name  = "region"
+    value = "ap-south-1"
+  }
+
+  set {
+    name  = "vpcId"
+    value = var.vpc_id
+  }
+}
