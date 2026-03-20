@@ -12,18 +12,18 @@ resource "kubernetes_namespace" "postgres" {
 # StorageClass for EBS gp3
 #######################################
 
-resource "kubernetes_storage_class" "gp3" {
+resource "kubernetes_storage_class_v1" "gp3" {
   metadata {
     name = "gp3"
   }
 
-  provisioner = "ebs.csi.aws.com"
+  storage_provisioner = "ebs.csi.aws.com"
 
   parameters = {
     type = "gp3"
   }
 
-  reclaim_policy = "Retain"
+  reclaim_policy      = "Retain"
   volume_binding_mode = "WaitForFirstConsumer"
 }
 
