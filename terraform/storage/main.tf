@@ -38,7 +38,7 @@ resource "kubernetes_secret" "postgres_secret" {
   }
 
   data = {
-    POSTGRES_PASSWORD = base64encode("postgres")
+    POSTGRES_PASSWORD = "postgres"
   }
 
   type = "Opaque"

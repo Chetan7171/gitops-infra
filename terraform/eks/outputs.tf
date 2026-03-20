@@ -1,8 +1,3 @@
-# Required cluster data for OIDC issuer output
-data "aws_eks_cluster" "eks" {
-  name = aws_eks_cluster.eks.name
-}
-
 # Outputs to be consumed by root providers & IAM module
 
 output "cluster_name" {
