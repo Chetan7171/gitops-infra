@@ -1,11 +1,2 @@
-variable "cluster_name" {
-  type = string
-}
+# No input variables required
 
-variable "vpc_id" {
-  type = string
-}
-
-variable "oidc_issuer" {
-  type = string
-}

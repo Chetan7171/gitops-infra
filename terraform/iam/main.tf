@@ -1,98 +1,33 @@
-###############################################
-# OIDC Provider for IRSA
-###############################################
+###############################
+# IAM role for k3s EC2 instance
+###############################
 
-resource "aws_iam_openid_connect_provider" "eks_oidc" {
-  client_id_list  = ["sts.amazonaws.com"]
-  thumbprint_list = ["9e99a48a9960b14926bb7f3b02e22da0afd08055"]
-  url             = var.oidc_issuer
+resource "aws_iam_role" "k3s_role" {
+  name = "k3s-ec2-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Service = "ec2.amazonaws.com" }
+      Action    = "sts:AssumeRole"
+    }]
+  })
 }
 
-###############################################
-# IAM Role for ALB Controller
-###############################################
-
-data "aws_iam_policy_document" "alb_assume_role_policy" {
-  statement {
-    effect = "Allow"
-
-    principals {
-      type        = "Federated"
-      identifiers = [aws_iam_openid_connect_provider.eks_oidc.arn]
-    }
-
-    actions = ["sts:AssumeRoleWithWebIdentity"]
-
-    condition {
-      test     = "StringEquals"
-      variable = "${replace(aws_iam_openid_connect_provider.eks_oidc.url, "https://", "")}:sub"
-      values   = ["system:serviceaccount:kube-system:aws-load-balancer-controller"]
-    }
-  }
+# Pull images from ECR
+resource "aws_iam_role_policy_attachment" "ecr_read" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+  role       = aws_iam_role.k3s_role.name
 }
 
-resource "aws_iam_role" "alb_role" {
-  name               = "eks-alb-controller-role"
-  assume_role_policy = data.aws_iam_policy_document.alb_assume_role_policy.json
+# Connect via AWS SSM Session Manager (no SSH key needed)
+resource "aws_iam_role_policy_attachment" "ssm" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+  role       = aws_iam_role.k3s_role.name
 }
 
-resource "aws_iam_policy" "alb_policy" {
-  name   = "AWSLoadBalancerControllerIAMPolicy"
-  policy = file("${path.module}/alb_iam_policy.json")
-}
-
-resource "aws_iam_role_policy_attachment" "alb_attach" {
-  policy_arn = aws_iam_policy.alb_policy.arn
-  role       = aws_iam_role.alb_role.name
-}
-
-###############################################
-# Kubernetes ServiceAccount
-###############################################
-
-resource "kubernetes_service_account" "alb_service_account" {
-  metadata {
-    name      = "aws-load-balancer-controller"
-    namespace = "kube-system"
-
-    annotations = {
-      "eks.amazonaws.com/role-arn" = aws_iam_role.alb_role.arn
-    }
-  }
-}
-
-###############################################
-# Install ALB Controller via Helm
-###############################################
-
-resource "helm_release" "aws_load_balancer_controller" {
-  name       = "aws-load-balancer-controller"
-  namespace  = "kube-system"
-  repository = "https://aws.github.io/eks-charts"
-  chart      = "aws-load-balancer-controller"
-
-  set {
-    name  = "clusterName"
-    value = var.cluster_name
-  }
-
-  set {
-    name  = "serviceAccount.create"
-    value = "false"
-  }
-
-  set {
-    name  = "serviceAccount.name"
-    value = kubernetes_service_account.alb_service_account.metadata[0].name
-  }
-
-  set {
-    name  = "region"
-    value = "ap-south-1"
-  }
-
-  set {
-    name  = "vpcId"
-    value = var.vpc_id
-  }
+resource "aws_iam_instance_profile" "k3s_profile" {
+  name = "k3s-instance-profile"
+  role = aws_iam_role.k3s_role.name
 }
